@@ -200,7 +200,7 @@ console.log(decision); // { allowed: false, action: 'deny', ... }
 Contributions welcome. Please open an issue first to discuss what you'd like to change.
 
 ```bash
-git clone https://github.com/mcpguard/mcpguard.git
+git clone https://github.com/ChefGeth/mcpguard.git
 cd mcpguard
 npm install
 npm test
