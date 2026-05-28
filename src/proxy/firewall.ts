@@ -1,5 +1,5 @@
 /**
- * MCP Firewall Proxy — intercepts tool calls between AI agents and MCP servers
+ * MCP firewall proxy - intercepts tool calls between agents and MCP servers
  *
  * This is the runtime component. It acts as a man-in-the-middle proxy that:
  * 1. Intercepts MCP tool call requests
@@ -135,7 +135,7 @@ export class McpFirewall {
     if (this.options.upstream) {
       await this.forwardRequest(req, res, body);
     } else {
-      // No upstream — just log and pass through
+      // no upstream configured, just respond
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         jsonrpc: '2.0',

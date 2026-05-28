@@ -1,5 +1,5 @@
 /**
- * Audit Logger — structured JSON logging for compliance (EU AI Act, SOC 2)
+ * Audit logger - structured JSON logging for compliance
  */
 
 import * as fs from 'fs';

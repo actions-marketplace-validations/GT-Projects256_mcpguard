@@ -1,5 +1,5 @@
 /**
- * Policy Engine — evaluates YAML-defined rules against tool calls
+ * Policy engine - evaluates YAML rules against tool calls
  */
 
 import * as fs from 'fs';
@@ -26,7 +26,7 @@ export class PolicyEngine {
     let decision: PolicyDecision = {
       allowed: true,
       action: 'allow',
-      reason: 'No matching rule — default allow',
+      reason: 'No matching rule - default allow',
       timestamp: new Date().toISOString(),
     };
 

@@ -1,5 +1,5 @@
 /**
- * mcpguard proxy — Runtime firewall for MCP tool calls
+ * mcpguard proxy command
  */
 
 import { Command } from 'commander';
@@ -53,7 +53,7 @@ export const proxyCommand = new Command('proxy')
       policyEngine,
       auditLogger,
       onBlock: (event) => {
-        console.log(colorize('red', `  ✗ BLOCKED: ${event.tool} — ${event.decision?.reason}`));
+        console.log(colorize('red', `  ✗ BLOCKED: ${event.tool} - ${event.decision?.reason}`));
       },
       onAllow: (event) => {
         console.log(colorize('green', `  ✓ ALLOWED: ${event.tool}`));
@@ -65,7 +65,7 @@ export const proxyCommand = new Command('proxy')
 
     // Start
     console.log('');
-    console.log(colorize('bold', '  mcpguard — MCP Firewall Proxy'));
+    console.log(colorize('bold', '  mcpguard - MCP Firewall Proxy'));
     console.log(colorize('dim', '  ─────────────────────────────────'));
     console.log(`  Listening on ${options.host}:${options.port}`);
     if (options.upstream) {

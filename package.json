@@ -32,7 +32,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ChefGeth/mcpguard"
+    "url": "https://github.com/GT-Projects256/mcpguard"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -1,5 +1,5 @@
 /**
- * mcpguard scan — Scan MCP configs against OWASP MCP Top 10
+ * mcpguard scan command
  */
 
 import { Command } from 'commander';
@@ -58,7 +58,7 @@ export const scanCommand = new Command('scan')
 
 function printTextReport(results: ScanResult[]): void {
   console.log('');
-  console.log(colorize('bold', '  mcpguard — MCP Security Scanner'));
+  console.log(colorize('bold', '  mcpguard - MCP Security Scanner'));
   console.log(colorize('dim', '  ─────────────────────────────────'));
   console.log('');
 
@@ -122,7 +122,7 @@ function toSarif(results: ScanResult[]): object {
         driver: {
           name: 'mcpguard',
           version: '0.1.0',
-          informationUri: 'https://github.com/mcpguard/mcpguard',
+          informationUri: 'https://github.com/GT-Projects256/mcpguard',
           rules: results.flatMap(r => r.findings).map(f => ({
             id: f.rule,
             shortDescription: { text: f.message },

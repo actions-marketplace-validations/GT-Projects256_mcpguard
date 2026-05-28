@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * mcpguard CLI — Security firewall for MCP servers
+ * mcpguard CLI
  */
 
 import { Command } from 'commander';

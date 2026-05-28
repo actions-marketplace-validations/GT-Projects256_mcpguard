@@ -1,5 +1,5 @@
 /**
- * mcpguard — Open-source security firewall for MCP servers
+ * mcpguard - security scanner and firewall for MCP servers
  *
  * Programmatic API for embedding mcpguard in your own tools.
  */

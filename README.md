@@ -1,33 +1,27 @@
 # mcpguard
 
-Open-source security firewall for MCP (Model Context Protocol) servers. Scan configurations for vulnerabilities, enforce runtime policies on tool calls, and generate compliance-ready audit logs.
+Security scanner and firewall for MCP (Model Context Protocol) servers. Checks your configs for known issues, blocks sketchy tool calls at runtime, and keeps audit logs.
 
-Built against the **OWASP MCP Top 10** (2026).
+Maps to the **OWASP MCP Top 10** (2026).
 
 ## Why
 
-MCP connects AI agents to tools and data. That connection is powerful — and dangerous. Research shows 82% of MCP implementations have path traversal vulnerabilities, 67% are susceptible to code injection, and 5.5% of servers exhibit tool poisoning.
+MCP is everywhere now - Claude, Cursor, VS Code, OpenAI. But most setups ship with zero security review. Studies found 82% of MCP implementations have path traversal issues, 67% have code injection vectors, and about 5.5% of public servers have tool poisoning baked in.
 
-mcpguard gives you visibility and control:
-
-- **Scan** your MCP configs for known vulnerability patterns
-- **Block** dangerous tool calls with policy-as-code rules
-- **Detect** tool poisoning in real-time
-- **Log** every tool call for audit compliance (EU AI Act, SOC 2)
+This tool helps you catch that stuff before it bites you.
 
 ## Quick Start
 
 ```bash
-# Install globally
 npm install -g mcpguard
 
-# Scan your MCP configuration
+# scan your MCP config
 mcpguard scan
 
-# Generate a starter policy
+# generate a starter policy
 mcpguard init
 
-# Start the firewall proxy
+# run the firewall proxy
 mcpguard proxy --policy mcpguard.policy.yaml --port 9090
 ```
 
@@ -35,49 +29,31 @@ mcpguard proxy --policy mcpguard.policy.yaml --port 9090
 
 ### `mcpguard scan [target]`
 
-Scan MCP server configurations against OWASP MCP Top 10 rules.
+Scans MCP server configs for security issues.
 
 ```bash
-# Scan current directory
-mcpguard scan
-
-# Scan a specific config file
-mcpguard scan claude_desktop_config.json
-
-# Output as JSON
-mcpguard scan --format json
-
-# Output as SARIF (for GitHub Code Scanning)
-mcpguard scan --format sarif
-
-# CI mode: exit code 1 on critical/high findings
-mcpguard scan --ci
-
-# Filter by severity
-mcpguard scan --severity high
+mcpguard scan                              # scan current directory
+mcpguard scan claude_desktop_config.json   # scan a specific file
+mcpguard scan --format json                # JSON output
+mcpguard scan --format sarif               # SARIF for GitHub Code Scanning
+mcpguard scan --ci                         # exit code 1 on critical/high
+mcpguard scan --severity high              # only show high+ severity
 ```
 
 ### `mcpguard proxy`
 
-Start a runtime firewall that intercepts MCP tool calls, evaluates them against policies, and detects tool poisoning.
+Sits between your agent and MCP servers. Checks every tool call against your policy, blocks anything that doesn't pass, and logs everything.
 
 ```bash
-# Basic proxy
 mcpguard proxy --port 9090
-
-# With policy enforcement
 mcpguard proxy --policy mcpguard.policy.yaml --port 9090
-
-# With upstream forwarding
 mcpguard proxy --policy mcpguard.policy.yaml --upstream http://localhost:3000
-
-# With audit logging to file
 mcpguard proxy --policy mcpguard.policy.yaml --audit-file ./audit.log
 ```
 
 ### `mcpguard init`
 
-Generate a default policy file to get started.
+Drops a default policy file you can customize.
 
 ```bash
 mcpguard init
@@ -86,7 +62,7 @@ mcpguard init --output custom-policy.yaml
 
 ## Policy Format
 
-Policies are YAML files that define allow/deny/audit rules for tool calls:
+Policies are YAML. You define rules with conditions and actions (allow/deny/audit):
 
 ```yaml
 version: "1.0"
@@ -115,10 +91,10 @@ rules:
 
 ### Condition Fields
 
-| Field | Description |
-|-------|-------------|
-| `tool.name` | Name of the MCP tool being called |
-| `tool.description` | Tool's description text |
+| Field | What it matches |
+|-------|-----------------|
+| `tool.name` | Tool name |
+| `tool.description` | Tool description text |
 | `param.name` | Parameter names (comma-separated) |
 | `param.value` | Parameter values (comma-separated) |
 | `server.name` | MCP server name |
@@ -126,36 +102,38 @@ rules:
 
 ### Operators
 
-| Operator | Description |
-|----------|-------------|
-| `equals` | Exact string match |
-| `contains` | Substring match |
-| `matches` | Regular expression match |
-| `startsWith` | Prefix match |
-| `endsWith` | Suffix match |
-| `in` | Value in list |
+`equals`, `contains`, `matches` (regex), `startsWith`, `endsWith`, `in` (list)
 
-## OWASP MCP Top 10 Coverage
+## What It Checks
 
-| ID | Category | Rules |
-|----|----------|-------|
-| MCP01 | Tool Poisoning | Hidden instruction detection, zero-width character detection |
-| MCP02 | Excessive Permissions | Broad file system access checks |
-| MCP03 | Insecure Transport | Unencrypted HTTP detection |
-| MCP04 | Command Injection | Shell metacharacter detection in args |
-| MCP05 | Path Traversal | `..` pattern detection in paths |
-| MCP06 | Secret Exposure | API key and token pattern matching |
-| MCP07 | Insecure Defaults | Missing security configuration |
-| MCP08 | Input Validation | Dangerous command detection |
-| MCP09 | Audit Gaps | Missing logging configuration |
-| MCP10 | Privilege Escalation | sudo/privileged mode detection |
+| ID | Category | What we look for |
+|----|----------|------------------|
+| MCP01 | Tool Poisoning | Hidden instructions, zero-width chars |
+| MCP02 | Excessive Permissions | Root-level access, wildcard permissions |
+| MCP03 | Insecure Transport | Unencrypted HTTP, SSRF via metadata endpoints |
+| MCP04 | Command Injection | Shell metacharacters in args |
+| MCP05 | Path Traversal | `..` in paths |
+| MCP06 | Secret Exposure | 15+ token patterns (AWS, Stripe, GitHub, Slack, etc.), sensitive env vars with literal values |
+| MCP07 | Insecure Defaults | Missing security config for remote servers |
+| MCP08 | Input Validation | Shell interpreters, curl\|sh pipe-to-shell patterns |
+| MCP09 | Audit Gaps | No logging configured |
+| MCP10 | Privilege Escalation | sudo, --privileged |
+
+## Try It
+
+Scan the included example configs to see mcpguard in action:
+
+```bash
+# Scan a deliberately dangerous config (lots of findings)
+mcpguard scan examples/dangerous-config.json
+
+# Scan a clean config (should pass)
+mcpguard scan examples/safe-config.json
+```
 
 ## GitHub Actions
 
-Add mcpguard to your CI/CD pipeline:
-
 ```yaml
-# .github/workflows/mcp-security.yml
 name: MCP Security Scan
 on: [push, pull_request]
 
@@ -179,12 +157,10 @@ jobs:
 ```typescript
 import { Scanner, PolicyEngine, McpFirewall, AuditLogger } from 'mcpguard';
 
-// Scan a config
 const scanner = new Scanner();
 const results = scanner.scanFile('claude_desktop_config.json');
 console.log(results.summary);
 
-// Evaluate a policy
 const engine = new PolicyEngine();
 engine.loadFromFile('mcpguard.policy.yaml');
 const decision = engine.evaluate({
@@ -197,10 +173,10 @@ console.log(decision); // { allowed: false, action: 'deny', ... }
 
 ## Contributing
 
-Contributions welcome. Please open an issue first to discuss what you'd like to change.
+PRs welcome. Open an issue first if it's anything big.
 
 ```bash
-git clone https://github.com/ChefGeth/mcpguard.git
+git clone https://github.com/GT-Projects256/mcpguard.git
 cd mcpguard
 npm install
 npm test

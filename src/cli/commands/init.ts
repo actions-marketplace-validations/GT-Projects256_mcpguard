@@ -1,5 +1,5 @@
 /**
- * mcpguard init — Generate a default policy file and config
+ * mcpguard init command
  */
 
 import { Command } from 'commander';
@@ -7,8 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { colorize } from '../format';
 
-const DEFAULT_POLICY = `# mcpguard policy — YAML security rules for MCP tool calls
-# Docs: https://github.com/mcpguard/mcpguard#policies
+const DEFAULT_POLICY = `# mcpguard policy - security rules for MCP tool calls
+# Docs: https://github.com/GT-Projects256/mcpguard#policies
 
 version: "1.0"
 name: default
@@ -75,7 +75,7 @@ export const initCommand = new Command('init')
     fs.writeFileSync(outputPath, DEFAULT_POLICY, 'utf-8');
 
     console.log('');
-    console.log(colorize('bold', '  mcpguard — Policy Initialized'));
+    console.log(colorize('bold', '  mcpguard - Policy Initialized'));
     console.log(colorize('dim', '  ─────────────────────────────────'));
     console.log(colorize('green', `  ✓ Created ${outputPath}`));
     console.log('');

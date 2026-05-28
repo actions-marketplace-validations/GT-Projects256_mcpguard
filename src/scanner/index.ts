@@ -1,5 +1,5 @@
 /**
- * MCP Scanner — scans MCP server configurations against OWASP MCP Top 10
+ * MCP scanner - checks server configs against OWASP MCP Top 10
  */
 
 import * as fs from 'fs';
@@ -114,7 +114,7 @@ export class Scanner {
             findings.push(f);
           }
         } catch {
-          // Rule execution error — skip silently
+          // rule threw, skip it
         }
       }
     }

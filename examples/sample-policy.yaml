@@ -1,0 +1,61 @@
+version: "1.0"
+name: production-security
+description: Example security policy for production MCP deployments
+
+rules:
+  # Block all shell execution tools
+  - id: deny-shell-exec
+    name: Block shell execution
+    action: deny
+    priority: 100
+    conditions:
+      - field: tool.name
+        operator: matches
+        value: "(exec|shell|bash|cmd|terminal|run_command)"
+
+  # Block file deletion outside /tmp
+  - id: deny-destructive-file-ops
+    name: Block destructive file operations
+    action: deny
+    priority: 90
+    conditions:
+      - field: tool.name
+        operator: matches
+        value: "(delete|remove|unlink|rmdir)"
+
+  # Audit all database operations
+  - id: audit-db-ops
+    name: Audit database operations
+    action: audit
+    priority: 50
+    conditions:
+      - field: tool.name
+        operator: matches
+        value: "(query|sql|database|db_)"
+
+  # Audit all file writes
+  - id: audit-file-writes
+    name: Audit file write operations
+    action: audit
+    priority: 50
+    conditions:
+      - field: tool.name
+        operator: contains
+        value: write
+
+  # Block tools touching sensitive paths
+  - id: deny-sensitive-paths
+    name: Block access to sensitive paths
+    action: deny
+    priority: 80
+    conditions:
+      - field: param.value
+        operator: matches
+        value: "(/etc/passwd|/etc/shadow|\\.ssh/|credentials|secrets)"
+
+  # Allow everything else (default permissive)
+  - id: allow-default
+    name: Allow by default
+    action: allow
+    priority: 1
+    conditions: []
