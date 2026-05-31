@@ -13,7 +13,7 @@ This tool helps you catch that stuff before it bites you.
 ## Quick Start
 
 ```bash
-npm install -g mcpguard
+npm install -g @gtprojects/mcpguard
 
 # scan your MCP config
 mcpguard scan
@@ -145,7 +145,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install -g mcpguard
+      - run: npm install -g @gtprojects/mcpguard
       - run: mcpguard scan --ci --format sarif > results.sarif
       - uses: github/codeql-action/upload-sarif@v3
         with:
@@ -155,7 +155,7 @@ jobs:
 ## Programmatic API
 
 ```typescript
-import { Scanner, PolicyEngine, McpFirewall, AuditLogger } from 'mcpguard';
+import { Scanner, PolicyEngine, McpFirewall, AuditLogger } from '@gtprojects/mcpguard';
 
 const scanner = new Scanner();
 const results = scanner.scanFile('claude_desktop_config.json');
