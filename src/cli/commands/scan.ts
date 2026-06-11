@@ -4,9 +4,13 @@
 
 import { Command } from 'commander';
 import * as path from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { Scanner } from '../../scanner';
 import { ScanResult, ScanFinding, Severity } from '../../types';
 import { formatSeverity, formatCategory, colorize } from '../format';
+
+const pkg = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'package.json'), 'utf-8'));
 
 export const scanCommand = new Command('scan')
   .description('Scan MCP server configurations for security issues')
@@ -14,14 +18,13 @@ export const scanCommand = new Command('scan')
   .option('-s, --severity <level>', 'Minimum severity to report (critical, high, medium, low, info)', 'low')
   .option('-f, --format <type>', 'Output format (text, json, sarif)', 'text')
   .option('--ci', 'CI mode: exit with code 1 if critical or high findings', false)
-  .action(async (target: string, options: any) => {
+  .action((target: string, options: any) => {
     const scanner = new Scanner({ minSeverity: options.severity as Severity });
     const absTarget = path.resolve(target);
 
     let results: ScanResult[];
 
     try {
-      // Try as file first
       if (target.endsWith('.json')) {
         results = [scanner.scanFile(absTarget)];
       } else {
@@ -30,6 +33,7 @@ export const scanCommand = new Command('scan')
     } catch (err: any) {
       console.error(colorize('red', `Error: ${err.message}`));
       process.exit(2);
+      return;
     }
 
     if (results.length === 0) {
@@ -38,7 +42,6 @@ export const scanCommand = new Command('scan')
       process.exit(0);
     }
 
-    // Output results
     if (options.format === 'json') {
       console.log(JSON.stringify(results, null, 2));
     } else if (options.format === 'sarif') {
@@ -47,12 +50,13 @@ export const scanCommand = new Command('scan')
       printTextReport(results);
     }
 
-    // CI exit code
     if (options.ci) {
       const hasBlocking = results.some(r =>
         r.findings.some(f => f.severity === 'critical' || f.severity === 'high')
       );
-      process.exit(hasBlocking ? 1 : 0);
+      if (hasBlocking) {
+        process.exitCode = 1;
+      }
     }
   });
 
@@ -73,7 +77,6 @@ function printTextReport(results: ScanResult[]): void {
       continue;
     }
 
-    // Group findings by category
     const grouped = new Map<string, ScanFinding[]>();
     for (const f of result.findings) {
       const key = f.category;
@@ -95,7 +98,6 @@ function printTextReport(results: ScanResult[]): void {
       console.log('');
     }
 
-    // Summary
     const s = result.summary;
     console.log(colorize('dim', '  ─────────────────────────────────'));
     console.log(
@@ -110,9 +112,6 @@ function printTextReport(results: ScanResult[]): void {
   }
 }
 
-/**
- * Convert results to SARIF format for GitHub Code Scanning
- */
 function toSarif(results: ScanResult[]): object {
   return {
     $schema: 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json',
@@ -121,7 +120,7 @@ function toSarif(results: ScanResult[]): object {
       tool: {
         driver: {
           name: 'mcpguard',
-          version: '0.1.0',
+          version: pkg.version,
           informationUri: 'https://github.com/GT-Projects256/mcpguard',
           rules: results.flatMap(r => r.findings).map(f => ({
             id: f.rule,

@@ -5,19 +5,26 @@
  */
 
 import { Command } from 'commander';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { scanCommand } from './commands/scan';
 import { proxyCommand } from './commands/proxy';
 import { initCommand } from './commands/init';
+
+const pkg = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 
 const program = new Command();
 
 program
   .name('mcpguard')
   .description('Open-source security firewall for MCP (Model Context Protocol) servers')
-  .version('0.1.0');
+  .version(pkg.version);
 
 program.addCommand(scanCommand);
 program.addCommand(proxyCommand);
 program.addCommand(initCommand);
 
-program.parse();
+program.parseAsync().catch((err) => {
+  console.error(err);
+  process.exit(2);
+});
