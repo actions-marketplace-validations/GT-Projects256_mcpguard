@@ -133,6 +133,40 @@ mcpguard scan examples/safe-config.json
 
 ## GitHub Actions
 
+Use the action directly in your workflow:
+
+```yaml
+name: MCP Security Scan
+on: [push, pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: GT-Projects256/mcpguard@main
+        with:
+          fail-on: high
+          sarif-upload: true
+```
+
+### Action Inputs
+
+| Input | Default | Description |
+|-------|---------|-------------|
+| `target` | `.` | File or directory to scan |
+| `format` | `text` | Output format: text, json, sarif |
+| `severity` | `low` | Minimum severity to report |
+| `fail-on` | `high` | Fail if findings at this level or above (set to `none` to never fail) |
+| `sarif-upload` | `false` | Upload results to GitHub Code Scanning |
+| `version` | `latest` | mcpguard version to install |
+
+### Manual Setup
+
+If you prefer to install manually:
+
 ```yaml
 name: MCP Security Scan
 on: [push, pull_request]

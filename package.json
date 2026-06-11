@@ -1,6 +1,6 @@
 {
   "name": "@gtprojects/mcpguard",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Open-source security firewall for MCP (Model Context Protocol) servers. Scan, monitor, and enforce policies on AI agent tool calls.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

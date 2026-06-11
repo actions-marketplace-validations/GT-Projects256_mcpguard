@@ -1,0 +1,148 @@
+name: 'mcpguard - MCP Security Scanner'
+description: 'Scan MCP server configurations for security issues (OWASP MCP Top 10)'
+author: 'GT-Projects256'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  target:
+    description: 'File or directory to scan (defaults to current directory)'
+    required: false
+    default: '.'
+  format:
+    description: 'Output format: text, json, or sarif'
+    required: false
+    default: 'text'
+  severity:
+    description: 'Minimum severity to report: low, medium, high, critical'
+    required: false
+    default: 'low'
+  fail-on:
+    description: 'Fail the action if findings at this severity or above are found: low, medium, high, critical, none'
+    required: false
+    default: 'high'
+  sarif-upload:
+    description: 'Upload SARIF results to GitHub Code Scanning (requires security-events write permission)'
+    required: false
+    default: 'false'
+  version:
+    description: 'Version of mcpguard to install (defaults to latest)'
+    required: false
+    default: 'latest'
+
+outputs:
+  findings-count:
+    description: 'Total number of findings'
+  critical-count:
+    description: 'Number of critical findings'
+  high-count:
+    description: 'Number of high findings'
+  sarif-file:
+    description: 'Path to SARIF output file (if sarif-upload is true)'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install mcpguard
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          npm install -g @gtprojects/mcpguard
+        else
+          npm install -g @gtprojects/mcpguard@${{ inputs.version }}
+        fi
+
+    - name: Run scan
+      id: scan
+      shell: bash
+      run: |
+        set +e
+
+        # Build the command
+        CMD="mcpguard scan ${{ inputs.target }}"
+        CMD="$CMD --severity ${{ inputs.severity }}"
+
+        # Run JSON scan to get counts
+        JSON_OUTPUT=$(mcpguard scan ${{ inputs.target }} --format json --severity ${{ inputs.severity }} 2>/dev/null || true)
+
+        TOTAL=$(echo "$JSON_OUTPUT" | node -e "
+          let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+            try{const j=JSON.parse(d);console.log(j.summary?.total||j.findings?.length||0)}
+            catch(e){console.log(0)}
+          })" 2>/dev/null || echo "0")
+
+        CRITICAL=$(echo "$JSON_OUTPUT" | node -e "
+          let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+            try{const j=JSON.parse(d);const f=j.findings||[];console.log(f.filter(x=>x.severity==='critical').length)}
+            catch(e){console.log(0)}
+          })" 2>/dev/null || echo "0")
+
+        HIGH=$(echo "$JSON_OUTPUT" | node -e "
+          let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+            try{const j=JSON.parse(d);const f=j.findings||[];console.log(f.filter(x=>x.severity==='high').length)}
+            catch(e){console.log(0)}
+          })" 2>/dev/null || echo "0")
+
+        echo "findings-count=$TOTAL" >> $GITHUB_OUTPUT
+        echo "critical-count=$CRITICAL" >> $GITHUB_OUTPUT
+        echo "high-count=$HIGH" >> $GITHUB_OUTPUT
+
+        # Run the display scan
+        mcpguard scan ${{ inputs.target }} --format ${{ inputs.format }} --severity ${{ inputs.severity }}
+        SCAN_EXIT=$?
+
+        # Generate SARIF if requested
+        if [ "${{ inputs.sarif-upload }}" = "true" ]; then
+          mcpguard scan ${{ inputs.target }} --format sarif --severity ${{ inputs.severity }} > mcpguard-results.sarif 2>/dev/null || true
+          echo "sarif-file=mcpguard-results.sarif" >> $GITHUB_OUTPUT
+        fi
+
+        # Determine if we should fail
+        FAIL_ON="${{ inputs.fail-on }}"
+        if [ "$FAIL_ON" = "none" ]; then
+          exit 0
+        fi
+
+        # Map severity to numeric for comparison
+        sev_to_num() {
+          case "$1" in
+            critical) echo 4 ;;
+            high) echo 3 ;;
+            medium) echo 2 ;;
+            low) echo 1 ;;
+            *) echo 0 ;;
+          esac
+        }
+
+        FAIL_NUM=$(sev_to_num "$FAIL_ON")
+
+        # Check if any findings meet the fail threshold
+        SHOULD_FAIL=$(echo "$JSON_OUTPUT" | node -e "
+          let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+            try{
+              const j=JSON.parse(d);const f=j.findings||[];
+              const map={critical:4,high:3,medium:2,low:1};
+              const threshold=$FAIL_NUM;
+              const has=f.some(x=>(map[x.severity]||0)>=threshold);
+              console.log(has?1:0)
+            }catch(e){console.log(0)}
+          })" 2>/dev/null || echo "0")
+
+        if [ "$SHOULD_FAIL" = "1" ]; then
+          echo "::error::mcpguard found findings at or above '$FAIL_ON' severity"
+          exit 1
+        fi
+
+    - name: Upload SARIF
+      if: inputs.sarif-upload == 'true' && always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: mcpguard-results.sarif
+      continue-on-error: true
